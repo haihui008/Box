@@ -3,16 +3,13 @@ name: Build Android TV APK
 on:
   push:
     branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -21,7 +18,7 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Set up Python
+      - name: Set up Python 3.8
         uses: actions/setup-python@v5
         with:
           python-version: '3.8'
@@ -29,16 +26,17 @@ jobs:
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      # 🔥 强制覆盖 chaquopy buildPython 为 Linux 路径
-      - name: Override Chaquopy Python path
+      # 🔥 强行把你写死的 Windows Python 路径替换成 Linux 路径
+      - name: Fix hardcoded Windows Python path
         run: |
-          mkdir -p pyramid/src/main
-          echo "chaquopy.buildPython=python3" >> pyramid/gradle.properties
+          cd pyramid
+          sed -i 's|D:/Programs/Python/Python38/python.exe|/usr/bin/python3|g' build.gradle
+          sed -i 's|buildPython.*=.*python.exe|buildPython = "python3"|g' build.gradle
 
       - name: Grant execute permission
         run: chmod +x gradlew
 
-      - name: Build release
+      - name: Build APK
         run: ./gradlew pyramid:assembleRelease
 
       - name: Rename to tv.apk
@@ -46,7 +44,7 @@ jobs:
           mkdir -p output
           cp pyramid/build/outputs/apk/release/*.apk output/tv.apk
 
-      - name: Upload APK
+      - name: Upload tv.apk
         uses: actions/upload-artifact@v4
         with:
           name: tv-apk
