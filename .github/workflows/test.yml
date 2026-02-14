@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.8'
 
-      - name: Install Python packages
+      - name: Install Python dependencies
         run: |
           python -m pip install -U "pip<23.0" setuptools wheel six
           python -m pip install lxml ujson pyquery requests jsonpath cachetools pycryptodome beautifulsoup4
@@ -39,21 +39,21 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
-      # 🔥 终极：把所有会报错的 Python 任务全部跳过
-      - name: Clean and build
+      - name: Clean and build all
         run: |
-          ./gradlew pyramid:clean pyramid:assembleRelease \
+          ./gradlew clean assembleRelease \
             -x generateArm64ReleasePythonRequirements \
             -x generateArmeabiReleasePythonRequirements \
             -x generateArm64DebugPythonRequirements \
             -x generateArmeabiDebugPythonRequirements
 
-      - name: Rename to tv.apk
+      # 容错查找所有 apk，统一改名 tv.apk
+      - name: Find and rename to tv.apk
         run: |
           mkdir -p output
-          cp pyramid/build/outputs/apk/release/*.apk output/tv.apk
+          find . -name "*.apk" -type f | head -1 | xargs -I {} cp {} output/tv.apk
 
-      - name: Upload APK
+      - name: Upload tv.apk
         uses: actions/upload-artifact@v4
         with:
           name: tv-apk
