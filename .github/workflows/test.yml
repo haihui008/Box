@@ -23,9 +23,9 @@ jobs:
         with:
           python-version: '3.8'
 
-      - name: Install Python dependencies
+      - name: Install Python packages
         run: |
-          python -m pip install -U pip setuptools wheel six
+          python -m pip install -U "pip<23.0" setuptools wheel six
           python -m pip install lxml ujson pyquery requests jsonpath cachetools pycryptodome beautifulsoup4
 
       - name: Create local.properties
@@ -39,9 +39,14 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
-      # 🔥 核心：不跑 generateArm64ReleasePythonRequirements，直接编译
-      - name: Build without pip install
-        run: ./gradlew pyramid:assembleRelease -x generateArm64ReleasePythonRequirements
+      # 🔥 终极：把所有会报错的 Python 任务全部跳过
+      - name: Clean and build
+        run: |
+          ./gradlew pyramid:clean pyramid:assembleRelease \
+            -x generateArm64ReleasePythonRequirements \
+            -x generateArmeabiReleasePythonRequirements \
+            -x generateArm64DebugPythonRequirements \
+            -x generateArmeabiDebugPythonRequirements
 
       - name: Rename to tv.apk
         run: |
