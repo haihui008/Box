@@ -21,31 +21,32 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      # 安装 Python（解决 Chaquopy 找不到 python 的问题）
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.8'
 
       - name: Create local.properties
-        run: |
-          echo "sdk.dir=$ANDROID_HOME" > local.properties
+        run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      - name: Grant execute permission for gradlew
+      # 🔥 强制覆盖 chaquopy buildPython 为 Linux 路径
+      - name: Override Chaquopy Python path
+        run: |
+          mkdir -p pyramid/src/main
+          echo "chaquopy.buildPython=python3" >> pyramid/gradle.properties
+
+      - name: Grant execute permission
         run: chmod +x gradlew
 
-      # 强制用系统 Python，覆盖你本地 Windows 路径
-      - name: Build release APK
-        run: |
-          ./gradlew assembleRelease -Pchaquopy.buildPython=python3
+      - name: Build release
+        run: ./gradlew pyramid:assembleRelease
 
       - name: Rename to tv.apk
         run: |
           mkdir -p output
-          cp app/build/outputs/apk/release/*.apk output/tv.apk 2>/dev/null || \
           cp pyramid/build/outputs/apk/release/*.apk output/tv.apk
 
-      - name: Upload tv.apk
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: tv-apk
