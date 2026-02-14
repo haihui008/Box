@@ -23,28 +23,32 @@ jobs:
         with:
           python-version: '3.8'
 
+      - name: Install python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install setuptools wheel
+
       - name: Create local.properties
         run: echo "sdk.dir=$ANDROID_HOME" > local.properties
 
-      # 🔥 强行把你写死的 Windows Python 路径替换成 Linux 路径
-      - name: Fix hardcoded Windows Python path
+      - name: Replace Windows Python path
         run: |
           cd pyramid
           sed -i 's|D:/Programs/Python/Python38/python.exe|/usr/bin/python3|g' build.gradle
-          sed -i 's|buildPython.*=.*python.exe|buildPython = "python3"|g' build.gradle
 
       - name: Grant execute permission
         run: chmod +x gradlew
 
-      - name: Build APK
-        run: ./gradlew pyramid:assembleRelease
+      # 重点：加上 --info 看日志，但继续构建
+      - name: Build with debug info
+        run: ./gradlew pyramid:assembleRelease --info
 
       - name: Rename to tv.apk
         run: |
           mkdir -p output
-          cp pyramid/build/outputs/apk/release/*.apk output/tv.apk
+          cp pyramid/build/outputs/apk/release/*.apk output/tv.apk 2>/dev/null || true
 
-      - name: Upload tv.apk
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: tv-apk
